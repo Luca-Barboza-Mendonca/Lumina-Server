@@ -5,7 +5,7 @@ import struct
 import select 
 import util
 
-chat_content = util.LimitedQueue(max_size=45)
+chat_content = util.LimitedQueue(max_size=24)
 chat_client_adresses = []
 
 def find_open_port(host, start_port, end_port):

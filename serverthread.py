@@ -52,43 +52,48 @@ def server(port):
 
                 client_sockets.append(connection)
             else:
-                # Receive data from a connected client
-                #data = recvall(ready_socket, 4096)
-                data = receive_json_data(ready_socket)
-                data_str = data.decode("utf-8")
+                try:
+                    # Receive data from a connected client
+                    #data = recvall(ready_socket, 4096)
+                    data = receive_json_data(ready_socket)
+                    data_str = data.decode("utf-8")
 
-                json_list = util.makeJsonList(data_str)
+                    json_list = util.makeJsonList(data_str)
 
-                peer_name = ready_socket.getpeername()
-                peer = ':'.join(map(str, peer_name))
+                    peer_name = ready_socket.getpeername()
+                    peer = ':'.join(map(str, peer_name))
 
-                if not data:
-                    # Maybe we don't close here idk
-                    print(f"Connection closed by {peer}")
-                    del playerData[peer]
-                    ready_socket.close()
-                    client_sockets.remove(ready_socket)
-                else:
-                    for i in range(0, len(json_list)):
-                        json_data = json_list[i]
-                        if (json_data["request"] == "playerdata"):
+                    if not data:
+                        # Maybe we don't close here idk
+                        print(f"Connection closed by {peer}")
+                        del playerData[peer]
+                        ready_socket.close()
+                        client_sockets.remove(ready_socket)
+                    else:
+                        for i in range(0, len(json_list)):
+                            json_data = json_list[i]
+                            if (json_data["request"] == "playerdata"):
 
-                            playerData[peer] = json_data
-                            playerData[peer]["hitpoints"] = playerHealth[peer][1]
-                            # if c%200 ==0:
-                            #     print(f"Received JSON data from {ready_socket.getpeername()}")
-                            #     print(playerData[peer])
+                                playerData[peer] = json_data
+                                playerData[peer]["hitpoints"] = playerHealth[peer][1]
+                                # if c%200 ==0:
+                                #     print(f"Received JSON data from {ready_socket.getpeername()}")
+                                #     print(playerData[peer])
 
-                            ready_socket.sendall(str(playerData).encode("utf-8"))
-                        elif (json_data["request"] == "damage"):
-                            # Apply damage to the desired playerId
-                            # For some reason this executes several times per swing
-                            key = util.find_item_by_id(playerData, json_data["id"])
-                            key2 = util.find_item(playerHealth, json_data["id"])
-                            if (key != None):
-                                id = json_data["id"]
-                                hitpoints = json_data["hitpoints"]
-                                print(f"Updating Id number {id} hitpoints to {hitpoints}")
-                                playerData[key]["hitpoints"] = json_data["hitpoints"]
-                                playerHealth[key2][1] = json_data["hitpoints"]
+                                ready_socket.sendall(str(playerData).encode("utf-8"))
+                            elif (json_data["request"] == "damage"):
+                                # Apply damage to the desired playerId
+                                # For some reason this executes several times per swing
+                                key = util.find_item_by_id(playerData, json_data["id"])
+                                key2 = util.find_item(playerHealth, json_data["id"])
+                                if (key != None):
+                                    id = json_data["id"]
+                                    hitpoints = json_data["hitpoints"]
+                                    print(f"Updating Id number {id} hitpoints to {hitpoints}")
+                                    playerData[key]["hitpoints"] = json_data["hitpoints"]
+                                    playerHealth[key2][1] = json_data["hitpoints"]
+                except ConnectionResetError:
+                    continue
+                except ConnectionAbortedError:
+                    continue
             c += 1  
