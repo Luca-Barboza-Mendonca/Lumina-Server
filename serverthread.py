@@ -14,7 +14,7 @@ def receive_json_data(sock):
             break
     return data
 
-def server(port):
+def server(port, chatPort):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_address = ('localhost', port)  
     server_socket.bind(server_address)
@@ -41,7 +41,7 @@ def server(port):
                 connection, client_address = server_socket.accept()
                 print(f"Connection from {client_address}")
 
-                connection_number = "id_" + str(client_counter)
+                connection_number = "id_" + str(client_counter) + "_" + str(chatPort)
                 peer_name = connection.getpeername()
                 identifier = ':'.join(map(str, peer_name))
                 # Dados padrão, serão atualizados no primeiro request de playerData

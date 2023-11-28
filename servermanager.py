@@ -5,8 +5,6 @@ import struct
 import select 
 import util
 
-# Fila com capacidade maxima determinada pela janela de chat do cliente
-chat_content = util.LimitedQueue(max_size=24)
 chat_client_adresses = []
 
 def find_open_port(host, start_port, end_port):
@@ -27,6 +25,7 @@ def find_open_port(host, start_port, end_port):
 
     return open_ports
 
+
 # send/receive message tem um protocolo customizado de mensagem
 
 def send_message(sock, message):
@@ -44,6 +43,9 @@ def receive_message(sock):
 
 
 def chat_socket(port):
+    # Fila com capacidade maxima determinada pela janela de chat do cliente
+    chat_content = util.LimitedQueue(max_size=24)
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.bind(("127.0.0.1", port))
     sock.listen(12)
@@ -82,14 +84,16 @@ def chat_socket(port):
         except ValueError:
             continue
 
-def run_server(port, chatPort):
+def run_server(port):
     server_threads = []
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('localhost', port))
     server_socket.listen(1)
 
-    chat_thread = threading.Thread(target=chat_socket, args=(chatPort, ))
-    chat_thread.start()
+
+    chat_threads = []
+    # chat_thread = threading.Thread(target=chat_socket, args=(chatPort, ))
+    # chat_thread.start()
 
     
     client_sockets = [server_socket]
@@ -103,8 +107,8 @@ def run_server(port, chatPort):
                 client_socket, client_address = server_socket.accept()
                 client_sockets.append(client_socket)
                 print("Connected to", client_address)
-                # Send the chat port over to the client
-                send_message(client_socket, str(chatPort))
+                # Send output to client
+                send_message(client_socket, "Main Server Connected to Client")
 
                 # send_message(client_socket, "Hello from server!")
             else:
@@ -118,10 +122,16 @@ def run_server(port, chatPort):
                 # Logic for threading below
                 print("Received message:", received_message)
                 try:
-                    t = threading.Thread(target=serverthread.server, args=(int(received_message), ))
+                    chatPort = result[0]
+                    t = threading.Thread(target=serverthread.server, args=(int(received_message), chatPort, ))
                     t.start()
+                    # Assumindo que as porta do vetor result ainda estão abertas
+                    c = threading.Thread(target=chat_socket, args=(chatPort, ))
+                    result.pop(0)
+                    c.start()
+                    chat_threads.append(c)
                     server_threads.append(t)
-                    send_message(ready_socket, f"New Session Open on port {received_message}")
+                    send_message(ready_socket, str(chatPort))
                 except:
                     send_message(ready_socket, f"Failed to open Session on port {received_message}")
 
@@ -135,4 +145,5 @@ result = find_open_port(host, start_port, end_port)
 
 port = result[0]
 
-run_server(port, result[1])
+result.pop(0)
+run_server(port)
