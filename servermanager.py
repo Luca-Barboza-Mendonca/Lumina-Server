@@ -5,10 +5,12 @@ import struct
 import select 
 import util
 
+# Fila com capacidade maxima determinada pela janela de chat do cliente
 chat_content = util.LimitedQueue(max_size=24)
 chat_client_adresses = []
 
 def find_open_port(host, start_port, end_port):
+    # Encontrar uma porta qualquer para o servidor principal
     open_ports = []
 
     for port in range(start_port, end_port + 1):
@@ -24,6 +26,8 @@ def find_open_port(host, start_port, end_port):
             sock.close()
 
     return open_ports
+
+# send/receive message tem um protocolo customizado de mensagem
 
 def send_message(sock, message):
     message_length = len(message)
@@ -52,23 +56,28 @@ def chat_socket(port):
 
             for ready_socket in readable:
                 if ready_socket == sock:
+                    # Novo cliente conectado ao chat
                     client_socket, client_address = sock.accept()
                     client_sockets.append(client_socket)
                     chat_client_adresses.append(client_address)
                 else:
+                    # Receber mensagem de chat do cliente, adicionar à fila e enviar o chat log
                     chatMessageFromClient = receive_message(ready_socket)
 
                     if chatMessageFromClient == None:
                         print("Closing connection with peer")
                         ready_socket.close()
+                        client_sockets.remove(ready_socket)
+                        continue
 
                     if chatMessageFromClient in chat_content.queue:
                         continue
                     
-                    if chatMessageFromClient != "" and chatMessageFromClient is not None:
+                    if chatMessageFromClient != "" and chatMessageFromClient is not None and chatMessageFromClient != "update":
                         print(f"New chat message: {chatMessageFromClient}")
                         chat_content.enqueue(chatMessageFromClient)
                     message = "\n".join(map(str, list(chat_content.queue)))
+                    # Enviar o log completo do chat
                     ready_socket.sendall(message.encode("utf-8"))
         except ValueError:
             continue
@@ -99,6 +108,7 @@ def run_server(port, chatPort):
 
                 # send_message(client_socket, "Hello from server!")
             else:
+                # Abrir nova partida na porta que o cliente enviar
                 received_message = receive_message(ready_socket)
                 if received_message == None:
                     print(f"Closed connection with {ready_socket.getpeername()}")

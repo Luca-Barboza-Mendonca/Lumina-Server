@@ -1,7 +1,10 @@
 import json
 from collections import deque
 
+# Funcionalidades adicionais
+
 class LimitedQueue:
+    # Fila com capacidade limitada para simular o "scroll" de um chat
     def __init__(self, max_size):
         self.queue = deque(maxlen=max_size)
 
